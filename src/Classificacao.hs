@@ -5,6 +5,9 @@ module Classificacao
     , saldo
     , aproveitamento
     , classificacao
+    , ateRodada
+    , maiorGoleada
+    , mediaGols
     ) where
 
 import Data.List (sortBy)
@@ -56,3 +59,24 @@ classificacao partidas = ordenar (map (linhaDoTime partidas) (times partidas))
                    <> comparing (Down . saldo)
                    <> comparing (Down . golsPro)
                    <> comparing timeLinha)
+
+ateRodada :: Int -> [Partida] -> [Partida]
+ateRodada limite = filter ((<= limite) . rodada)
+
+diferencaGols :: Partida -> Int
+diferencaGols partida = abs (golsMandante partida - golsVisitante partida)
+
+-- Mantem a primeira partida quando a diferenca de gols empata.
+maiorGoleada :: [Partida] -> Maybe Partida
+maiorGoleada = foldl escolher Nothing
+  where
+    escolher Nothing partida = Just partida
+    escolher (Just melhor) partida
+        | diferencaGols partida > diferencaGols melhor = Just partida
+        | otherwise = Just melhor
+
+mediaGols :: [Partida] -> Maybe Double
+mediaGols [] = Nothing
+mediaGols partidas = Just (fromIntegral total / fromIntegral (length partidas))
+  where
+    total = sum (map (\p -> golsMandante p + golsVisitante p) partidas)
