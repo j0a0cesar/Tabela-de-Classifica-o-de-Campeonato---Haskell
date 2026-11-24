@@ -1,0 +1,12 @@
+cradle:
+  multi:
+    - path: "./src"
+      config:
+        cradle:
+          direct:
+            arguments: ["-isrc"]
+    - path: "./tests"
+      config:
+        cradle:
+          direct:
+            arguments: ["-isrc", "-itests"]
