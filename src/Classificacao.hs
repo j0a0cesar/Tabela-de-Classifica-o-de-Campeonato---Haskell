@@ -4,8 +4,11 @@ module Classificacao
     , pontosLinha
     , saldo
     , aproveitamento
+    , classificacao
     ) where
 
+import Data.List (sortBy)
+import Data.Ord (Down(..), comparing)
 import Tipos
 
 pontos :: Resultado -> Int
@@ -44,3 +47,12 @@ aproveitamento :: Linha -> Double
 aproveitamento linha
     | jogos linha == 0 = 0
     | otherwise = 100 * fromIntegral (pontosLinha linha) / (3 * fromIntegral (jogos linha))
+
+classificacao :: [Partida] -> [Linha]
+classificacao partidas = ordenar (map (linhaDoTime partidas) (times partidas))
+  where
+    ordenar = sortBy (comparing (Down . pontosLinha)
+                   <> comparing (Down . vitorias)
+                   <> comparing (Down . saldo)
+                   <> comparing (Down . golsPro)
+                   <> comparing timeLinha)
