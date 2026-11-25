@@ -20,8 +20,14 @@ Os construtores públicos permitem criar diretamente dados inválidos; a valida�
 
 ## Validação
 
-Camada 1: 25 testes aprovados com GHC 9.10.3 no Windows. Camada 2: registrar aqui o resultado real da compilação com -Wall e dos testes após executá-los. A equipe deve revisar os critérios antes da entrega.
+As Camadas 1 e 2 foram compiladas com GHC 9.10.3 no Windows, utilizando `-Wall` e `-Werror=incomplete-patterns`.
+
+Os 59 testes automatizados foram aprovados, sendo 25 referentes à Camada 1 e 34 referentes à Camada 2.
+
+A classificação final e a classificação após a terceira rodada foram conferidas com os resultados das partidas do campeonato. Também foram verificados os critérios de desempate, as estatísticas e o comportamento das funções com listas vazias.
 
 ## Camada 3
 
-A complementar pela equipe responsável após a implementação: tratamento de campos, precedência dos erros, duplicações por rodada, linhas em branco e comentários, limitações e resultados de testes.
+A leitura e a validação dos dados textuais ainda estão em desenvolvimento.
+
+As partidas recebidas deverão ser validadas antes de serem utilizadas pelas funções de classificação. As decisões sobre tratamento dos campos, numeração das linhas, duplicação de times por rodada e precedência dos erros serão registradas após a implementação.

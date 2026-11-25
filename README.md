@@ -45,4 +45,28 @@ ghc -Wall -Wincomplete-patterns -isrc -outputdir .build -o .build\tabela.exe src
 
 ## Estado do desenvolvimento
 
-Estrutura inicial configurada. As funcionalidades das três camadas serão implementadas progressivamente.
+As Camadas 1 e 2 estão implementadas, incluindo a modelagem dos dados, a classificação dos times, os critérios de desempate e as estatísticas do campeonato.
+
+A Camada 3, responsável pela leitura, validação das entradas e apresentação dos resultados, ainda está em desenvolvimento.
+
+O executável atual apresenta a mensagem de inicialização do projeto. A demonstração completa será integrada na Camada 3.
+
+## Testes
+
+Os testes das Camadas 1 e 2 estão disponíveis em `tests/Testes.hs`.
+
+A bateria contém 59 verificações, incluindo os tipos e consultas básicas, a classificação, os desempates, as estatísticas e os casos de borda.
+
+Para compilar os testes no PowerShell:
+
+```powershell
+New-Item -ItemType Directory -Force -Path .build\m2-tests | Out-Null
+
+ghc --make -Wall -Werror=incomplete-patterns -isrc -outputdir .build\m2-tests -o .build\m2-tests\testes.exe tests\Testes.hs
+```
+
+Após uma compilação bem-sucedida, execute:
+
+```powershell
+.\.build\m2-tests\testes.exe
+```
