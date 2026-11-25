@@ -43,19 +43,29 @@ ghc -Wall -Wincomplete-patterns -isrc -outputdir .build -o .build\tabela.exe src
 .\.build\tabela.exe
 ```
 
+## Estrutura
+
+```
+src/Tipos.hs          Camada 1: tipos e consultas basicas
+src/Classificacao.hs  Camada 2: classificacao com funcoes de ordem superior
+src/Leitura.hs        Camada 3: leitura, validacao (Maybe/Either) e formatacao
+src/Dados.hs          campeonato de teste e entrada com erros, como String
+src/Main.hs           demonstracao das tres camadas
+tests/Testes.hs       testes com resultado esperado
+docs/decisoes.md      decisoes de modelagem e limitacoes
+```
+
 ## Estado do desenvolvimento
 
-As Camadas 1 e 2 estão implementadas, incluindo a modelagem dos dados, a classificação dos times, os critérios de desempate e as estatísticas do campeonato.
+As tres camadas estao implementadas. O `main` e o unico ponto com IO e demonstra, em sequencia: a tabela final, a tabela apos a rodada 3, as estatisticas (lider, maior goleada, media de gols), o tratamento de uma entrada com erros (`lerCampeonato` e `todosOsErros`) e o campeonato vazio.
 
-A Camada 3, responsável pela leitura, validação das entradas e apresentação dos resultados, ainda está em desenvolvimento.
-
-O executável atual apresenta a mensagem de inicialização do projeto. A demonstração completa será integrada na Camada 3.
+Os dados ficam no proprio codigo (`Dados.hs`), sem `getLine`, para funcionar tambem no playground.
 
 ## Testes
 
-Os testes das Camadas 1 e 2 estão disponíveis em `tests/Testes.hs`.
+Os testes das três camadas estão disponíveis em `tests/Testes.hs`.
 
-A bateria contém 59 verificações, incluindo os tipos e consultas básicas, a classificação, os desempates, as estatísticas e os casos de borda.
+A bateria contém 100 verificações: 25 da Camada 1, 34 da Camada 2 e 41 da Camada 3 (um teste para cada construtor de `Erro`, `todosOsErros`, `tabelaFormatada` e casos de borda).
 
 Para compilar os testes no PowerShell:
 
