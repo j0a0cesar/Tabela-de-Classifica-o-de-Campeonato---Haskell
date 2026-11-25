@@ -1,8 +1,9 @@
 module Main where
 
-import Data.List (nub, sort)
+import Data.List (isInfixOf, nub, sort)
 import Classificacao
-import Dados (dadosCampeonato, partidasExemplo)
+import Dados (dadosCampeonato, dadosComErros, partidasExemplo)
+import Leitura
 import Tipos
 
 -- Compara o resultado obtido com o esperado.
@@ -13,6 +14,10 @@ testar nome obtido esperado = do
         else putStrLn ("FALHOU  " ++ nome ++ ": obtido " ++ show obtido
                        ++ "; esperado " ++ show esperado)
     pure (obtido == esperado)
+
+listToMaybeErro :: [Erro] -> Maybe Erro
+listToMaybeErro []      = Nothing
+listToMaybeErro (e : _) = Just e
 
 semRepeticao :: Eq a => [a] -> Bool
 semRepeticao xs = length xs == length (nub xs)
@@ -137,7 +142,62 @@ main = do
         , testar "mediaGols: campeonato" (maybe False (\m -> abs (m - 35 / 15) < 1e-9) (mediaGols partidas)) True
         , testar "mediaGols: empate sem gols" (mediaGols [empate]) (Just 0)
         ]
-    let todos = resultados ++ resultadosM2
+    let valida = "1;A;1;0;B\n1;C;2;2;D\n2;A;0;0;C\n"
+        tabelaMini = [Linha "Athletico" 2 1 1 0 3 1, Linha "Coritiba" 2 0 1 1 1 2]
+        tabelaMiniTexto =
+            [ "Pos Time      Pts  J  V  E  D  SG"
+            , "  1 Athletico   4  2  1  1  0  +2"
+            , "  2 Coritiba    1  2  0  1  1  -1"
+            ]
+        tabelaVaziaTexto = ["Pos Time Pts  J  V  E  D  SG"]
+        primeiroErro = either Just (const Nothing) . lerCampeonato
+        mensagens = map mensagemErro (todosOsErros dadosComErros)
+    resultadosM3 <- sequence
+        [ testar "separar: campos" (separar ';' "a;b;c") ["a", "b", "c"]
+        , testar "separar: campos vazios" (separar ';' "a;;b;") ["a", "", "b", ""]
+        , testar "separar: texto vazio" (separar ';' "") [""]
+        , testar "lerPartida: linha valida" (lerPartida 1 "1;Coritiba;2;1;Athletico") (Right (Partida 1 "Coritiba" 2 1 "Athletico"))
+        , testar "lerPartida: ignora espacos e CR" (lerPartida 1 " 1 ; A ; 2 ; 1 ; B \r") (Right (Partida 1 "A" 2 1 "B"))
+        , testar "erro CamposInvalidos: poucos campos" (lerPartida 4 "1;A;1;1") (Left (CamposInvalidos 4 "1;A;1;1"))
+        , testar "erro CamposInvalidos: campos demais" (lerPartida 2 "1;A;1;1;B;x") (Left (CamposInvalidos 2 "1;A;1;1;B;x"))
+        , testar "erro CamposInvalidos: time vazio" (lerPartida 2 "1;;1;1;B") (Left (CamposInvalidos 2 "1;;1;1;B"))
+        , testar "erro CamposInvalidos: linha vazia" (lerPartida 9 "") (Left (CamposInvalidos 9 ""))
+        , testar "erro NumeroInvalido: placar dois" (lerPartida 3 "1;A;dois;0;B") (Left (NumeroInvalido 3 "dois"))
+        , testar "erro NumeroInvalido: placar 2a" (lerPartida 3 "1;A;0;2a;B") (Left (NumeroInvalido 3 "2a"))
+        , testar "erro NumeroInvalido: decimal" (lerPartida 3 "1;A;2.5;0;B") (Left (NumeroInvalido 3 "2.5"))
+        , testar "erro NumeroInvalido: hexadecimal" (lerPartida 3 "1;A;0x10;0;B") (Left (NumeroInvalido 3 "0x10"))
+        , testar "erro NumeroInvalido: placar vazio" (lerPartida 3 "1;A;;0;B") (Left (NumeroInvalido 3 ""))
+        , testar "erro NumeroInvalido: rodada texto" (lerPartida 5 "x;A;1;0;B") (Left (NumeroInvalido 5 "x"))
+        , testar "erro NumeroInvalido: rodada zero" (lerPartida 5 "0;A;1;0;B") (Left (NumeroInvalido 5 "0"))
+        , testar "erro PlacarNegativo: mandante" (lerPartida 6 "1;A;-1;0;B") (Left (PlacarNegativo 6))
+        , testar "erro PlacarNegativo: visitante" (lerPartida 6 "1;A;1;-3;B") (Left (PlacarNegativo 6))
+        , testar "erro MesmoTime" (lerPartida 7 "1;A;1;1;A") (Left (MesmoTime 7 "A"))
+        , testar "precedencia: numero antes de mesmo time" (lerPartida 7 "1;A;x;1;A") (Left (NumeroInvalido 7 "x"))
+        , testar "lerCampeonato: entrada valida" (lerCampeonato valida) (Right [Partida 1 "A" 1 0 "B", Partida 1 "C" 2 2 "D", Partida 2 "A" 0 0 "C"])
+        , testar "lerCampeonato: campeonato de teste" (lerCampeonato dadosCampeonato) (Right partidasExemplo)
+        , testar "lerCampeonato: texto vazio" (lerCampeonato "") (Right [])
+        , testar "lerCampeonato: so comentarios e brancos" (lerCampeonato "# a\n\n   \n# b\n") (Right [])
+        , testar "lerCampeonato: ignora comentarios e brancos" (lerCampeonato ("# x\n\n" ++ valida)) (lerCampeonato valida)
+        , testar "erro TimeRepetidoNaRodada: mandante" (lerCampeonato "1;A;1;0;B\n1;A;2;0;C") (Left (TimeRepetidoNaRodada 1 "A"))
+        , testar "erro TimeRepetidoNaRodada: visitante e mandante" (lerCampeonato "2;A;1;0;B\n2;C;2;0;A") (Left (TimeRepetidoNaRodada 2 "A"))
+        , testar "mesmo time em rodadas diferentes e valido" (fmap length (lerCampeonato "1;A;1;0;B\n2;A;2;0;B")) (Right 2)
+        , testar "numero da linha conta brancos e comentarios" (lerCampeonato "# c\n\n1;A;x;0;B") (Left (NumeroInvalido 3 "x"))
+        , testar "lerCampeonato: para no primeiro erro" (primeiroErro "1;A;x;0;B\n1;C;-1;0;D") (Just (NumeroInvalido 1 "x"))
+        , testar "todosOsErros: texto com 5 erros" (todosOsErros dadosComErros)
+            [ NumeroInvalido 3 "dois", CamposInvalidos 4 "2;Maringa;1;1", PlacarNegativo 6
+            , MesmoTime 7 "Coritiba", TimeRepetidoNaRodada 3 "Athletico" ]
+        , testar "todosOsErros: entrada valida" (todosOsErros dadosCampeonato) []
+        , testar "todosOsErros: texto vazio" (todosOsErros "") []
+        , testar "todosOsErros: primeiro coincide com lerCampeonato" (listToMaybeErro (todosOsErros dadosComErros)) (primeiroErro dadosComErros)
+        , testar "mensagemErro: indica a linha" (any ("linha 3" `isInfixOf`) (take 1 mensagens)) True
+        , testar "mensagemErro: indica a rodada" (any ("rodada 3" `isInfixOf`) (drop 4 mensagens)) True
+        , testar "tabelaFormatada: linhas" (lines (tabelaFormatada tabelaMini)) tabelaMiniTexto
+        , testar "tabelaFormatada: tabela vazia" (lines (tabelaFormatada [])) tabelaVaziaTexto
+        , testar "tabelaFormatada: uma linha por time mais cabecalho" (length (lines (tabelaFormatada (classificacao partidas)))) 7
+        , testar "tabelaFormatada: saldo positivo tem sinal" ("+8" `isInfixOf` tabelaFormatada tabelaFinal) True
+        , testar "fluxo completo: texto -> tabela final" (fmap classificacao (lerCampeonato dadosCampeonato)) (Right tabelaFinal)
+        ]
+    let todos = resultados ++ resultadosM2 ++ resultadosM3
         aprovados = length (filter id todos)
     putStrLn ("\nTestes aprovados: " ++ show aprovados ++ "/" ++ show (length todos))
     if and todos
