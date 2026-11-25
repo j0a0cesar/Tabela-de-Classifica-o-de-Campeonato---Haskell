@@ -1,4 +1,4 @@
-module Dados (partidasExemplo, dadosCampeonato) where
+module Dados (partidasExemplo, dadosCampeonato, dadosComErros) where
 
 import Data.List (intercalate)
 import Tipos (Partida(..))
@@ -36,4 +36,19 @@ formatarPartida p = intercalate ";"
     , show (golsMandante p)
     , show (golsVisitante p)
     , visitante p
+    ]
+
+-- Entrada com erros para mostrar a validacao da Camada 3
+-- Os numeros das linhas contam o comentario e a linha em branco
+dadosComErros :: String
+dadosComErros = unlines
+    [ "# rodada;mandante;golsMandante;golsVisitante;visitante"
+    , "1;Coritiba;2;1;Athletico"
+    , "1;Parana;dois;0;Operario"       -- linha 3: NumeroInvalido
+    , "2;Maringa;1;1"                  -- linha 4: CamposInvalidos
+    , ""
+    , "2;Londrina;-1;0;Operario"       -- linha 6: PlacarNegativo
+    , "3;Coritiba;1;1;Coritiba"        -- linha 7: MesmoTime
+    , "3;Athletico;2;0;Londrina"
+    , "3;Parana;1;0;Athletico"         -- Athletico joga duas vezes na rodada 3
     ]
